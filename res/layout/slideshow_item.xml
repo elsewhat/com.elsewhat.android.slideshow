@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ViewAnimator 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/slideshow_animator"
+    android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+<RelativeLayout android:layout_width="fill_parent"
+	android:layout_height="fill_parent" 
+	android:background="@drawable/slideshow_background">
+
+	<ImageView android:id="@+id/slideshow_photo" android:layout_width="fill_parent" android:layout_height="fill_parent" />
+
+
+        <LinearLayout
+            android:id="@+id/slideshow_text_background"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="75dip"
+
+    android:layout_alignParentBottom="true"
+    android:background="@drawable/text_background"
+    android:paddingLeft="20dip"
+    android:paddingRight="50dip"
+    android:paddingBottom="10dip"
+	android:paddingTop="0dip"
+    >
+    	<TextView android:id="@+id/slideshow_title"
+    	    android:textSize="@dimen/title_font_size"
+			android:textStyle="bold" android:textColor="@color/white" 
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:maxLines="1"
+			android:layout_gravity="top"/>
+		
+		<TextView
+        android:id="@+id/slideshow_description"
+        android:textSize="@dimen/description_font_size"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxLines="2"
+        android:textColor="@color/white"
+        android:singleLine="false"
+        
+        />
+        </LinearLayout>
+
+
+</RelativeLayout>
+</ViewAnimator>

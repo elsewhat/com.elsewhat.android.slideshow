@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Slideshow Gallery</string>
+    <string name="preferences_name">Settings</string>
+    <string name="actionbar_title"></string>
+    
+    <string name="menu_preferences">Settings</string>
+    <string name="menu_share">Share photo</string>
+   <string name="menu_toggle_title">Display/hide title</string> 
+
+    <string name="share_footer">Shared from the Slideshow gallery android app available at https://market.android.com/details?id=com.elsewhat.android.slideshow</string>
+	<string name="msg_pause_slideshow">Pausing slideshow...</string>
+	<string name="msg_resume_slideshow">Resuming slideshow...</string>
+	<string name="msg_cachedphotos_slideshow">Please restart the app now that cached photos have been deleted</string>
+	
+	<string name="msg_connected_roaming">You are currently connected with a roaming mobile connection. Therefore, we will not download any photos as this can incur significant costs </string>
+	<string name="msg_connected_mobile">You are currently connected with a mobile non-wifi connection. In order to download photos, change the relevant setting</string>
+	<string name="msg_unableto_connect">Unable to download photo list. Using cached photos</string>
+	
+<string name="msg_outofmemoryerror">Unable to display photo as there is not enough available memory</string>
+<string name="msg_unable_to_display_photo">Unable to display photo</string>	    
+	    
+	<string name="pref_category_slideshow">Slideshow settings</string>
+	
+	<string name="pref_category_other">Other settings</string>
+	
+	   
+	<string name="pref_premium_title">Upgrade to Premium version</string>
+	<string name="pref_premium_summary">See hundreds and hundreds of more photos.  Thanks for supporting
+your local internet artist! Click to upgrade!</string>
+	
+    <string name="pref_analytics_title">Analytics</string>
+	<string name="pref_analytics_summary">Allow anonymous analytics in order to improve app</string>
+	
+	 <string name="pref_phototitle_title">Photo title and description</string>
+	<string name="pref_phototitle_summary">Display photo title and description</string>   
+	    
+	<string name="pref_transition_title">Photo transition</string>
+	<string name="pref_transition_dialogtitle">Select transition</string>
+	
+	<string name="pref_displaytime_title">Number of seconds to display each photo</string>
+	<string name="pref_displaytime_summary">Enter the number of seconds to display each photo (5 seconds or more)</string>
+	
+	<string name="pref_allow3g_title">Download photos when not connected to WiFi (not recommended)</string>
+	<string name="pref_allow3g_summary">Allow usage of 3G or similar to download photos</string>    
+	
+	<string name="pref_deletecache_title">Delete cached photos</string>
+	<string name="pref_deletecache_dialogtitle">Are you sure you want to delete the cached photos?</string>
+	<string name="pref_deletecache_summary">Click to delete cached photos (will be downloaded again during next run)</string>
+	   
+	<string name="pref_about_title">About app</string>
+	<string name="pref_about_summary">This app was created by Dagfinn Parnas (@dparnas). Click to view other apps by the developer</string>
+	
+	<string-array name="pref_transitiontypes_text">
+		<item>Fade in</item>
+		<item>Slide in</item>
+		</string-array>
+	<string-array name="pref_transitiontypes_values">
+		<item>FADE_IN</item>
+		<item>SLIDE_IN</item>
+	</string-array>	
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+
+    <dimen name="description_font_size">14.5dip</dimen>
+    <dimen name="title_font_size">16.5dip</dimen>
+</resources>
