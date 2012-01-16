@@ -51,6 +51,7 @@ import com.elsewhat.android.slideshow.api.SlideshowPhoto;
 import com.elsewhat.android.slideshow.api.SlideshowPhotoCached;
 import com.elsewhat.android.slideshow.api.SlideshowPhotoDrawable;
 import com.elsewhat.android.slideshow.api.FileDownloader.FileDownloaderListener;
+import com.elsewhat.android.slideshow.backend.FlickrPublicSetBackend;
 import com.elsewhat.android.slideshow.backend.OPMLBackend;
 
 
@@ -932,7 +933,10 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 			@Override
 			protected Void doInBackground(Void... arg0) {
 	    		try {
-					slideshowPhotos = new OPMLBackend().getSlideshowPhotos(getBaseContext());
+	    			String flickrPhotosetID = "72157628899979341";
+	    			slideshowPhotos = new FlickrPublicSetBackend(flickrPhotosetID).getSlideshowPhotos(getBaseContext());
+	    			
+					//slideshowPhotos = new OPMLBackend().getSlideshowPhotos(getBaseContext());
 				} catch (Throwable e) {
 					Log.w(LOG_PREFIX, "Got exception while downloading photos",e);
 					exception=e;
