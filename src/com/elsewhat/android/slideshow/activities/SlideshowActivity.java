@@ -34,7 +34,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Gallery;
 import android.widget.ImageView;
@@ -47,12 +46,11 @@ import com.elsewhat.android.slideshow.api.AndroidUtils;
 import com.elsewhat.android.slideshow.api.CustomGallery;
 import com.elsewhat.android.slideshow.api.DownloadableObject;
 import com.elsewhat.android.slideshow.api.FileDownloader;
+import com.elsewhat.android.slideshow.api.FileDownloader.FileDownloaderListener;
 import com.elsewhat.android.slideshow.api.SlideshowPhoto;
 import com.elsewhat.android.slideshow.api.SlideshowPhotoCached;
 import com.elsewhat.android.slideshow.api.SlideshowPhotoDrawable;
-import com.elsewhat.android.slideshow.api.FileDownloader.FileDownloaderListener;
 import com.elsewhat.android.slideshow.backend.FlickrPublicSetBackend;
-import com.elsewhat.android.slideshow.backend.OPMLBackend;
 
 
 public class SlideshowActivity extends Activity implements FileDownloaderListener, OnSharedPreferenceChangeListener{
@@ -810,8 +808,8 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	            
 	            //if it is a promotion, add a click listener
 	            if(slideshowPhoto.isPromotion()){
-	            	      
-	            			
+	            	//uncomment if you want certain promotion photos to link to the paid version      
+	            	/*		
 	            	slideshowImageView.setOnClickListener(new OnClickListener() {
 						@Override
 						public void onClick(View v) {
@@ -822,7 +820,7 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 								startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://market.android.com/details?id=com.elsewhat.android.slideshow.paid")));
 							}
 						}
-					});
+					});*/
 	            }else {//should we display title and description on click?
 	            	//conflict between onFling and on click means we cannot use this approach
 	            	/*
@@ -933,6 +931,7 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 			@Override
 			protected Void doInBackground(Void... arg0) {
 	    		try {
+	    			//TODO-FORK Update flickr public photo set id
 	    			String flickrPhotosetID = "72157628899979341";
 	    			slideshowPhotos = new FlickrPublicSetBackend(flickrPhotosetID).getSlideshowPhotos(getBaseContext());
 	    			

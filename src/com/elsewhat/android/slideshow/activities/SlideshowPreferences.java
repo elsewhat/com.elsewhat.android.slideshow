@@ -34,6 +34,9 @@ import android.widget.Toast;
 public class SlideshowPreferences extends PreferenceActivity implements
 		OnSharedPreferenceChangeListener {
 
+	//TODO-FORK: Update this with your projects app package name from the android manifest
+	public static final String APP_PACKAGE_NAME="com.elsewhat.android.slideshow";
+	
 	public static final String PREFS_NAME = "SlideshowPreferences";
 
 	public static final String KEY_DO_ANALYTICS = "DoAnalytics";
@@ -60,7 +63,7 @@ public class SlideshowPreferences extends PreferenceActivity implements
 	public static final String DEFAULT_VALUE_DISPLAY_TIME = DEFAULT_VALUE_DISPLAY_TIME_INT+"";
 	
 	//TODO: Make sure this matches the package name of the app!
-	public static final String CACHE_DIRECTORY="/Android/data/com.elsewhat.android.slideshow.premium/files/";
+	public static final String CACHE_DIRECTORY="/Android/data/"+APP_PACKAGE_NAME+"/files/";
 
 	protected EditTextPreference editDisplayTime;
 	protected CheckBoxPreference cbAnalytics,cbDownloadOn3G, cbDoTransition,cbDisplayPhotoTitle;
@@ -96,9 +99,9 @@ public class SlideshowPreferences extends PreferenceActivity implements
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
 				try {
-					startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=pname:com.elsewhat.android.slideshow.premium")));
+					startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=pname:"+APP_PACKAGE_NAME)));
 				}catch (ActivityNotFoundException e) {
-					startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://market.android.com/details?id=com.elsewhat.android.slideshow.premium")));
+					startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://market.android.com/details?id=" + APP_PACKAGE_NAME)));
 				}
 				return true;
 			}

@@ -27,7 +27,7 @@ import com.elsewhat.android.slideshow.activities.SlideshowActivity;
 import com.elsewhat.android.slideshow.api.SlideshowPhoto;
 
 public class FlickrPublicSetBackend {
-	//TODO: Find way to hide!
+	//TODO-FORK: Define your own flickr api key (this is a test one)
 	protected String flickrAPIKey="f6ccebf5e7a6427fec99952ad91939e2";
 	protected String photoset_id;
 	
