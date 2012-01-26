@@ -1,0 +1,28 @@
+This project is the result of the open-sourcing of the app Photo Voyages of Trey Ratcliff
+Market link paid: https://market.android.com/details?id=com.stuckincustoms.slideshow.premium
+Market link free: https://market.android.com/details?id=com.stuckincustoms.slideshow
+
+A reference app with the latest feature are available at the market for free
+https://market.android.com/details?id=com.elsewhat.android.slideshow
+
+Features:
+- Combination of a few "hardcoded" photos that are part of the apk, whilst the rest come from a back-end are downloaded asynchronously
+- Presentation of each photo in fullscreen, with optional title and description
+- Fade-in/fade-out transition after x seconds
+- Swipe to swap photos
+- Share photo
+- Set as wallpaper
+- Promotional photos that act as advertisement for any paid version of the app
+- Extended caching (compared to out-of-the box from the android Gallery component)
+- Last-in/first-out queue for all file IO read which also checks if the View has been garbage collected in the mean time
+
+
+This android app can be used as a basis for your own slideshow or photoframe app. Feel free to fork it!
+
+Currently, it support the following back-ends:
+- (recommended) Flickr public set (through the class FlickrPublicSetBackend)
+- OPML over HTTP (through the class OPMLBackend)
+- SmugMug Recent photos (through the class SmugMugRecentBackend)
+
+In order to create a new app, search through the code for TODO-FORK and make sure you provide the necessary updates at these points.
+

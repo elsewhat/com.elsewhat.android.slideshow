@@ -8,6 +8,7 @@ import com.elsewhat.android.slideshow.activities.SlideshowPreferences;
 import com.google.android.apps.analytics.GoogleAnalyticsTracker;
 
 public class Analytics {
+	//TODO-FORK: Add your own google analytics id
 	public final static String ANALYTICS_ID = "UA-28244457-1";
 	private static GoogleAnalyticsTracker tracker = GoogleAnalyticsTracker
 			.getInstance();
