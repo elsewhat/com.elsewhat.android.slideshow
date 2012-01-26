@@ -1,10 +1,13 @@
 package com.elsewhat.android.slideshow.activities;
 
 import java.io.File;
+import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -25,6 +28,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.Display;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -43,17 +47,22 @@ import android.widget.Toast;
 import com.elsewhat.android.slideshow.R;
 import com.elsewhat.android.slideshow.api.Analytics;
 import com.elsewhat.android.slideshow.api.AndroidUtils;
+import com.elsewhat.android.slideshow.api.AsyncQueueableObject;
+import com.elsewhat.android.slideshow.api.AsyncReadQueue;
+import com.elsewhat.android.slideshow.api.AsyncReadQueue.AsyncQueueListener;
 import com.elsewhat.android.slideshow.api.CustomGallery;
 import com.elsewhat.android.slideshow.api.DownloadableObject;
 import com.elsewhat.android.slideshow.api.FileDownloader;
 import com.elsewhat.android.slideshow.api.FileDownloader.FileDownloaderListener;
+import com.elsewhat.android.slideshow.api.FileUtils;
+import com.elsewhat.android.slideshow.api.QueueablePhotoObject;
 import com.elsewhat.android.slideshow.api.SlideshowPhoto;
 import com.elsewhat.android.slideshow.api.SlideshowPhotoCached;
 import com.elsewhat.android.slideshow.api.SlideshowPhotoDrawable;
 import com.elsewhat.android.slideshow.backend.FlickrPublicSetBackend;
 
 
-public class SlideshowActivity extends Activity implements FileDownloaderListener, OnSharedPreferenceChangeListener{
+public class SlideshowActivity extends Activity implements FileDownloaderListener, OnSharedPreferenceChangeListener,AsyncQueueListener{
 		protected ImageAdapter imageAdapter;
 		public static final String LOG_PREFIX = "ElsewhatSlideshow";
 		protected File rootFileDirectory;
@@ -66,8 +75,16 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 		//temp list in order to make sure the image adapter is not updated too often
 		protected ArrayList<SlideshowPhoto> queuedSlideshowPhotos;
 		
+		protected AsyncReadQueue<Drawable> asyncReadQueue;
+		
+		protected Menu menu;
+		
 		boolean cachedPhotosDeleted=false;
 		boolean userCreatedTouchEvent=false;
+		
+		int screenHeightPx;
+		int screenWidthPx;
+		
 		
 	    @Override
 	    public void onCreate(Bundle savedInstanceState) {
@@ -86,13 +103,20 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 			String rootPath =  Environment.getExternalStorageDirectory()+ SlideshowPreferences.CACHE_DIRECTORY;
 			rootFileDirectory= new File (rootPath);
 			
+			asyncReadQueue=new AsyncReadQueue<Drawable>(getApplicationContext(), this);
+			
 			//register listener so we can handle if the cached photos are deleted
 			SharedPreferences settings = getSharedPreferences(SlideshowPreferences.PREFS_NAME, MODE_WORLD_READABLE);
 			settings.registerOnSharedPreferenceChangeListener(this);
 			
 			
 	        super.onCreate(savedInstanceState);
-	        //getActionBar().setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
+	        
+	        Display display = getWindowManager().getDefaultDisplay(); 
+	        screenWidthPx = display.getWidth();
+	        screenHeightPx = display.getHeight();
+	        //notifyUser("Resolution discovered "+screenWidthPx + "x"+screenHeightPx);
+	        
 	        setContentView(R.layout.gallery_1);
 
 	        // Reference the Gallery view
@@ -201,29 +225,52 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 		@Override
 		public boolean onCreateOptionsMenu(Menu menu) {
 			MenuInflater inflater = getMenuInflater();
-			inflater.inflate(R.menu.menu, menu);
+			//the set as menu item is not on googletv
+			if(AndroidUtils.isGoogleTV(getApplicationContext())){
+				inflater.inflate(R.menu.menu_googletv, menu);
+			}else {
+				inflater.inflate(R.menu.menu, menu);
+			}
+			this.menu=menu;
+			
 			return true;
 		}
 
 		@Override
 		public boolean onMenuItemSelected(int featureId, MenuItem item) {
 			switch (item.getItemId()) {
+			case R.id.menuSetAs:
+				SlideshowPhoto currentPhoto1 = imageAdapter.getItem(gallery.getSelectedItemPosition());
+				Analytics.trackPageView(getApplicationContext(), "/setas");
+				Analytics.trackEvent(getApplicationContext(), "actions", "setas", currentPhoto1.getTitle());
+				actionSetAsWallpaper(currentPhoto1);
+				
+				return true;
 			case R.id.menuPreferences:
 				Analytics.trackPageView(getApplicationContext(), "/preferences");
 				Intent iPreferences = new Intent(this, SlideshowPreferences.class);
 				startActivity(iPreferences);
 				return true;
 			case R.id.menuShare:
-				SlideshowPhoto currentPhoto = imageAdapter.getItem(gallery.getSelectedItemPosition());
+				SlideshowPhoto currentPhoto2 = imageAdapter.getItem(gallery.getSelectedItemPosition());
 				Analytics.trackPageView(getApplicationContext(), "/share");
-				Analytics.trackEvent(getApplicationContext(), "actions", "share", currentPhoto.getTitle());
-				actionSharePhoto(currentPhoto);
+				Analytics.trackEvent(getApplicationContext(), "actions", "share", currentPhoto2.getTitle());
+				actionSharePhoto(currentPhoto2);
 				
 				return true;
 			case R.id.menuTitle:
 				actionToggleTitle();
 				
-				return true;				
+				return true;	
+			case R.id.menuPause:
+				actionPauseSlideshow();
+				
+				return true;		
+			case R.id.menuPlay:
+				actionResumeSlideshow();
+				
+				return true;	
+				
 			default:
 				return super.onMenuItemSelected(featureId, item);
 			}
@@ -312,6 +359,58 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 		}
 
 		/**
+		 * Set a photo as the wallpaper (or possibly other apps receiving the intent)
+		 * 
+		 * @param slideshowPhoto
+		 */
+		public void actionSetAsWallpaper(SlideshowPhoto slideshowPhoto){
+			Uri uri = null; 
+			
+			//If it is a drawable resource, handle it different
+			if(slideshowPhoto instanceof SlideshowPhotoDrawable){
+				Log.i(LOG_PREFIX, "Set as... for one of the first three photos");
+				//write the file to a cache dir
+				SlideshowPhotoDrawable slideshowPhotoDrawable  = (SlideshowPhotoDrawable) slideshowPhoto;
+				//didn't work, as crop gets no access to folder
+				//File cacheDir = getCacheDir();
+				
+				File cacheDir = new File (rootFileDirectory,"temp");
+				cacheDir.mkdir();
+				
+				int drawableId = slideshowPhotoDrawable.getDrawableId();
+				InputStream inputStream = getResources().openRawResource(drawableId);
+				
+				File cachedPhoto = FileUtils.writeToFile(cacheDir, ""+drawableId+".jpg", inputStream);
+				
+				if(cachedPhoto==null){
+					notifyUser(getString(R.string.msg_wallpaper_failed_drawable));
+					return;
+				}
+				
+				uri = Uri.fromFile(cachedPhoto);
+			}else {
+				File filePhoto = new File (rootFileDirectory, slideshowPhoto.getFileName());
+				uri = Uri.fromFile(filePhoto);
+			}
+			
+			Intent intent = new Intent();
+			intent.setAction(Intent.ACTION_ATTACH_DATA);
+			String mimeType = "image/jpg";
+			
+			intent.setDataAndType(uri, mimeType);
+			intent.putExtra("mimeType", mimeType);
+			intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+			
+			Log.i(LOG_PREFIX, "Attempting to set photo as wallpaper uri:"+uri);
+			if(AndroidUtils.isGoogleTV(getApplicationContext())){
+				notifyUser(getString(R.string.msg_wallpaper_googletv));
+			}
+			
+            startActivity(Intent.createChooser(intent, "Set Photo As"));
+            
+		}
+		
+		/**
 		 * Share the provided photo through other android apps
 		 * 
 		 * Will share the image as a image/jpg content type and include title and description as extra
@@ -384,12 +483,12 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 			case 86:
 			case 127:
 				actionPauseSlideshow();
-				Toast.makeText(this, R.string.msg_pause_slideshow, Toast.LENGTH_SHORT).show();
+				
 				return true;
 			//case KeyEvent.KEYCODE_MEDIA_PLAY:
 			case 126:
 				actionResumeSlideshow();
-				Toast.makeText(this, R.string.msg_resume_slideshow, Toast.LENGTH_SHORT).show();
+				
 				return true;
 				
 			case KeyEvent.KEYCODE_MEDIA_NEXT:
@@ -512,7 +611,7 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
             }
             
             //trick to get cached views to update themselves
-            adapter.notifyDataSetChanged();
+            //adapter.notifyDataSetChanged();
             //let's extend the time untill the photo changes
             userCreatedTouchEvent=true;
             
@@ -570,12 +669,18 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 		public void actionPauseSlideshow(){
 			isSlideshowRunning=false;
 			slideshowTimerTask=null;
+			menu.setGroupVisible(R.id.menuGroupPaused, true);
+			menu.setGroupVisible(R.id.menuGroupPlaying, false);
+			Toast.makeText(this, R.string.msg_pause_slideshow, Toast.LENGTH_SHORT).show();
 		}
 		
 		public void actionResumeSlideshow(){
 			isSlideshowRunning=true;
 			slideshowTimerTask = new SlideshowTimerTask();
 			slideshowTimerTask.execute();
+			menu.setGroupVisible(R.id.menuGroupPaused, false);
+			menu.setGroupVisible(R.id.menuGroupPlaying, true);
+			Toast.makeText(this, R.string.msg_resume_slideshow, Toast.LENGTH_SHORT).show();
 		}
 		
 	    
@@ -623,11 +728,18 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 				boolean isConnectedToWired = AndroidUtils.isConnectedToWired(getApplicationContext());
 				//2. Do not download if not connected to Wifi and user has not changed connect to Wifi setting
 				if(isConnectedToWifi==false && isConnectedToWired==false && connectOn3G==false){
-					notifyUser(getString(R.string.msg_connected_mobile));
+					if(AndroidUtils.isGoogleTV(getApplicationContext())){
+						String msg = "On GoogleTV, but not connected to wifi or wired. Ignoring this. WifiCon="+isConnectedToWifi+ " WiredCon="+isConnectedToWired;
+						Log.w(LOG_PREFIX,  msg);
+						isConnectedToWifi=true;
+					}else {
+						notifyUser(getString(R.string.msg_connected_mobile));	
+					}
+					
 				}
 				
 				//3. Connect if on wifi or if not connected to wifi and wifi setting is changed
-				if((isConnectedToWifi==true||isConnectedToWired) || connectOn3G==true){
+				if((isConnectedToWifi==true||isConnectedToWired==true) || connectOn3G==true){
 					Log.i(LOG_PREFIX, "Downloading photos. ConnectedToWifi=" +isConnectedToWifi + " ConnectOn3G="+connectOn3G );
 					
 					//lets randomize all the non-cached photos
@@ -716,6 +828,7 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	    }
 	    
 	    public void addSlideshowPhoto(List<SlideshowPhoto> slideshowPhotos){
+	    	Log.i(LOG_PREFIX,"Adding "+ slideshowPhotos.size()+" photos to the slideshow");
 	    	//addAll is API 11+ 
 	    	//imageAdapter.addAll(slideshowPhotos);
 	    	for (Iterator<SlideshowPhoto> iterator = slideshowPhotos.iterator(); iterator
@@ -743,6 +856,9 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	        private final Context context;
 	        private File rootPhotoFolder;
 	        private boolean doDisplayPhotoTitle;
+	        private HashMap<Integer,WeakReference<View>> mapWeakRefViews;
+	        private final String LOADING_TAG="loading";
+	        private final String LOADED_TAG="Finished";
 
 
 	        public ImageAdapter(Context context, int textViewResourceId, List<SlideshowPhoto> listObjects, File rootPhotoFolder, boolean doDisplayPhotoTitle) {
@@ -756,6 +872,8 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	            mGalleryItemBackground = a.getResourceId(
 	                    R.styleable.Gallery_android_galleryItemBackground, 0);
 	            a.recycle();
+	            
+	            mapWeakRefViews= new HashMap<Integer,WeakReference<View>>(500);
 
 	        }
 	        
@@ -767,19 +885,49 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	        	return doDisplayPhotoTitle;
 	        }
 	        
+	        /**
+	         * Trigger the actionToggleTitle method to be call.
+	         * This is useful since the adapter is the only visible part for the Gallery
+	         * 
+	         */
+	        public void triggerActionToggleTitle(){
+	        	actionToggleTitle();
+	        }
+	        
 
-	        public View getView(int position, View convertView, ViewGroup parent) {
-	            
-	        	
+	        
+	        public View getView(int position, View convertView, ViewGroup parent) {        	
 	        	View slideshowView=convertView;
 	        	if(position>= getCount()){
 	        		return null;
 	        	}
+	        	
+	        	
 	        	SlideshowPhoto slideshowPhoto=getItem(position);
-	        	Log.i(LOG_PREFIX,position + " title:"+slideshowPhoto.getTitle());
+	        	Log.d(LOG_PREFIX,position + " title:"+slideshowPhoto.getTitle());
 	        	
-	        	
+	        	boolean copyDrawableFromCachedView=false;
+	        	View cachedView=null;
+	        	Integer mapKey = new Integer(position);
 	            if (slideshowView == null) {
+	            	//let's check the weak references for this View
+	            	if(mapWeakRefViews.containsKey(mapKey)){
+	            		//we have a key, but the View may be garbage collected
+	            		WeakReference<View> weakRefView = mapWeakRefViews.get(mapKey);
+	            		cachedView = weakRefView.get();
+	            		if(cachedView==null){
+	            			//view was cached, but has been deleted.
+	            			//it will be replaced later in this method, so don't bother deleting it from the hashmap
+	            		}else if(cachedView.getParent()!=null){
+	            			//Log.i(LOG_PREFIX,position + " was cached, but had a parent. So close!");
+	            			copyDrawableFromCachedView=true;
+	            		}else {
+	            			Log.d(LOG_PREFIX,position + " returned through weak reference caching. Yeah!");
+	            			return cachedView;
+	            		}
+	            	}
+	            	
+	            	//if no cached value, create it from the resource definition
 	            	LayoutInflater viewInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 	            	slideshowView = viewInflater.inflate(R.layout.slideshow_item, null);
 	            }
@@ -795,56 +943,40 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	            slideshowImageView.setBackgroundResource(mGalleryItemBackground);
 	            slideshowImageView.setBackgroundColor(Color.TRANSPARENT);
 	            
-	            slideshowImageView.setTag(slideshowPhoto.getFileName());
+	            slideshowImageView.setTag(LOADING_TAG);
+	            slideshowImageView.setImageResource(R.drawable.loading);
+	            
+	            //OLD METHOD
 	            //These lines of code are in a separate async task in order to not block the UI thread for approx 300 ms
 	            //Drawable drawable = slideshowPhoto.getLargePhotoDrawable(rootPhotoFolder);
 	            //slideshowImageView.setImageDrawable(drawable);
-	            new ReadPhotoFromFileTask(slideshowImageView,slideshowPhoto,rootPhotoFolder).execute();
+	            //new ReadPhotoFromFileTask(slideshowImageView,slideshowPhoto,rootPhotoFolder).execute();
 	            
 	           
 
-					
-		
-	            
-	            //if it is a promotion, add a click listener
-	            if(slideshowPhoto.isPromotion()){
-	            	//uncomment if you want certain promotion photos to link to the paid version      
-	            	/*		
-	            	slideshowImageView.setOnClickListener(new OnClickListener() {
-						@Override
-						public void onClick(View v) {
-							Analytics.trackEvent(getApplicationContext(), "actions", "promotion", "clicked");
-							try {
-								startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=pname:com.elsewhat.android.slideshow.paid")));
-							}catch (ActivityNotFoundException e) {
-								startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://market.android.com/details?id=com.elsewhat.android.slideshow.paid")));
-							}
-						}
-					});*/
-	            }else {//should we display title and description on click?
-	            	//conflict between onFling and on click means we cannot use this approach
-	            	/*
-	            	slideshowImageView.setOnTouchListener(new OnTouchListener() {
-						long timeMSDown;
-						@Override
-						public boolean onTouch(View v, MotionEvent event) {
-							switch(event.getActionMasked())
-					          {
-					             case MotionEvent.ACTION_DOWN:
-					            	 timeMSDown=System.currentTimeMillis();
-					            	 return true;
-					                 //break;
-					             case MotionEvent.ACTION_UP:
-					            	 long differenceMS= System.currentTimeMillis()-timeMSDown;
-					            	 Log.d(LOG_PREFIX, "Touch event difference in MS : "+differenceMS);
-					            	 if(differenceMS<200){
-					            		 actionToggleTitle(); 
-					            	 }
-					            	 break;
-					          }
-							return false;
-						}
-					});*/
+	            //This section applies if we have a cached view, but it cannot be reuse directly since it has a parent
+	            //let us copy the drawable
+	            boolean slideShowImageDrawableMissing=true;
+	            if(copyDrawableFromCachedView==true && cachedView!=null){
+	            	//reusing the drawable from a cached view
+	            	ImageView cachedSlideshowImageView = (ImageView)cachedView.findViewById(R.id.slideshow_photo);	
+	            	String cachedTag = (String)cachedSlideshowImageView.getTag();
+	            	if(cachedSlideshowImageView!=null && cachedTag!=null && cachedTag.equals(LOADED_TAG)){
+	            		slideshowImageView.setImageDrawable(cachedSlideshowImageView.getDrawable());
+	            		slideShowImageDrawableMissing=false;
+	            		Log.d(LOG_PREFIX,position+" Cached photo drawable reused. Yeah!");
+	            	}else {
+	            		Log.i(LOG_PREFIX,position+" Cached Photo is not loaded yet, so could not use cache. Doh!");
+	            	}
+	            }
+	            	
+	            if(slideShowImageDrawableMissing){
+		            //NEW METHOD
+		            //Add to a last-in/first-out queue
+	            	AsyncQueueableObject queueablePhotoObject=null;
+		            queueablePhotoObject = new QueueablePhotoObject(slideshowPhoto, slideshowView, rootPhotoFolder,LOADED_TAG, screenWidthPx,screenHeightPx);
+		            asyncReadQueue.add(queueablePhotoObject);
+		            Log.d(LOG_PREFIX,position+" is being loaded in a background async task");
 	            }
 	            
 	            
@@ -853,6 +985,8 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	            
 	            TextView slideshowDescription = (TextView)slideshowView.findViewById(R.id.slideshow_description);
 	            slideshowDescription.setText(slideshowPhoto.getDescription());
+	            //add scrolling to TextView
+	            //slideshowDescription.setMovementMethod(new ScrollingMovementMethod());
 	          
 	            //find out if we should hide the text descriptions
 	            boolean isEmptyTitle =false;
@@ -869,6 +1003,19 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	           
 	            //lastView = slideshowView;
 	            //lastFileName=slideshowPhoto.getFileName();
+	            
+	            //add the view to our weak reference caching
+	            WeakReference<View> weakRefView = new WeakReference<View>(slideshowView);
+	            mapWeakRefViews.put(mapKey, weakRefView);
+	            
+	            
+	            //DEBUG
+	            String classLayoutParam=null;
+	            Object objectLayoutParam = slideshowView.getLayoutParams();
+	            if(objectLayoutParam!=null){
+	            	classLayoutParam=objectLayoutParam.getClass().getName();
+	            }
+	            Log.d(LOG_PREFIX, "Layout params class="+classLayoutParam+ " value="+objectLayoutParam);
 	            
 	            return slideshowView;
 	        }
@@ -955,7 +1102,7 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 				
 				
 				/*if(photoUrls!=null){
-					Toast.makeText(getBaseContext(), "Found " + photoUrls.length + " photos from backend", Toast.LENGTH_SHORT).show();
+					Toast.makeText(getBaseContext(), "Found " + photoUrls.length + " photos from StuckInCustoms", Toast.LENGTH_SHORT).show();
 					for (int i = 0; i < photoUrls.length && i<4; i++) {
 						Log.i("SmugMug", photoUrls[i]);
 						new AddDrawableTask(photoUrls[i]).execute();
@@ -964,13 +1111,21 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 				}*/
 			}
 	    }
+
+
+
+		@Override
+		public void onAsyncReadComplete(AsyncQueueableObject queueableObject) {
+			//ignore this event
+			
+		}
 	    
 	    /**
 	     * Asynch task for loading a photo from File I/O.
 	     * 
 	     * A temporary loading drawable is set while waiting
 	     * 
-	     */
+	     *
 	    public class ReadPhotoFromFileTask extends AsyncTask<Void, Void, Void> {
 	    	ImageView imageView;
 	    	SlideshowPhoto slideshowPhoto;
@@ -987,10 +1142,10 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 			@Override
 			protected Void doInBackground(Void... arg0) {
 				try {
-				drawable = slideshowPhoto.getLargePhotoDrawable(fileFolder);
+				drawable = slideshowPhoto.getLargePhotoDrawable(fileFolder, screenWidthPx,screenHeightPx);
 				}catch (OutOfMemoryError e) {
 					outOfMemoryError=true;
-				}
+				}cat
 				return null;
 			}
 			
@@ -1001,27 +1156,7 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 					//special ICS bugfix since resources.getDrawable returns too large (>2048) drawable
 					//no longer needed as we read the drawable through the raw stream and BitMap drawable.
 					//int width= drawable.getIntrinsicWidth();
-					//int height = drawable.getIntrinsicHeight();
-					/*
-					if(width>2048 || height>2048){
-						BitmapDrawable bitmapDrawable =(BitmapDrawable)drawable;
-						Bitmap bitmap = bitmapDrawable.getBitmap();
-					    
-						boolean widthLargerThanHeight = (width>height)?true:false;
-						
-						double scaleFactor=1.0;
-						if(widthLargerThanHeight){
-							scaleFactor=2048.0/width;
-						}else {
-							scaleFactor=2048.0/height;
-						}
-						int newWidth=(int)(width*scaleFactor);
-						int newHeight=(int)(height*scaleFactor);;
-						
-						
-						Bitmap bitmapScaled = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, false);
-					    drawable = new BitmapDrawable(bitmapScaled);
-					}*/
+
 					
 					imageView.setImageDrawable(drawable);
 					//required because of a bug on Sony Google TV that retain the size of the loading image
@@ -1036,5 +1171,8 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 				
 			}
 	    }
+*/
+
+
 
 }

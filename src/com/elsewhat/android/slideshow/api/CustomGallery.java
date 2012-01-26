@@ -1,8 +1,13 @@
 package com.elsewhat.android.slideshow.api;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Random;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -13,6 +18,7 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.ScaleAnimation;
 import android.view.animation.Animation.AnimationListener;
+import android.widget.Adapter;
 import android.widget.Gallery;
 import android.widget.ImageView;
 import android.widget.ViewAnimator;
@@ -88,28 +94,22 @@ public class CustomGallery extends Gallery implements AnimationListener {
 				//Log.i("CustomGallery", "Before anim Current: " + getSelectedItemPosition() + " visible:"+ getFirstVisiblePosition()+ " count:"+ getCount());
 				if (getCount() > 0 && getSelectedItemPosition() < getCount() - 1) {
 					View currentView = getSelectedView();
+					if(currentView==null){
+						Log.w("CustomGallery", "CurrentView is null in onKeyDown. Should not happen, but lets try to skip to the next photo.");
+						nextSelection();
+						return true;
+					}
 					
-					
-					
-					
-					View nextView = getChildAt(getSelectedItemPosition()-getFirstVisiblePosition()+1);
 					View unboundNewView= getAdapter().getView(getSelectedItemPosition()+1, null, null);
 					
-					//nextView might have already loaded the drawable from file (avoiding the loading)
-					if(nextView!=null){
-						//transfering the image from the already loaded view, to the unbound one
-						ImageView unboundPhoto = (ImageView)unboundNewView.findViewById(R.id.slideshow_photo);
-						ImageView nextViewPhoto =(ImageView) nextView.findViewById(R.id.slideshow_photo);
-						if(nextViewPhoto.getDrawable()!=null){
-							unboundPhoto.setImageDrawable(nextViewPhoto.getDrawable());
-							//Log.i("CustomGallery", "Swapped drawable");
-									
-						}
-					}
-
+					Log.d("CustomGallery","About to evaluate an animation. OngoignAnimation="+ongoingAnimation+ " inanim="+inAnimation+" outanim="+outAnimation);
+					
 					//check if we already have an animation as well
 					if(inAnimation==null && outAnimation==null || ongoingAnimation){
 						nextSelection();
+						//assume it is not ongoing anymore
+						//could also be the action listener which is invalid
+						//ongoingAnimation=false;
 					}else {
 						
 						viewAnimator = (ViewAnimator)currentView;
@@ -121,6 +121,7 @@ public class CustomGallery extends Gallery implements AnimationListener {
 						//trigger the animation and the event listener when finished
 						ongoingAnimation=true;
 						viewAnimator.showNext();
+						
 					}
 				}
 				return true;
@@ -144,6 +145,7 @@ public class CustomGallery extends Gallery implements AnimationListener {
 			viewAnimator.setInAnimation(null);
 			viewAnimator.setOutAnimation(null);
 			viewAnimator.removeViewAt(1);
+			ongoingAnimation=false;
 		}
 		//
 		
@@ -175,6 +177,8 @@ public class CustomGallery extends Gallery implements AnimationListener {
 			float velocityY) {
 		//Log.d("CustomGallery", "onFling called");
 		userCreatedTouchEvent=true;
+		//the animation event listener might not trigger
+		ongoingAnimation=false;
 		
 		float velMax = 2500f;
 	    float velMin = 1000f;
@@ -205,6 +209,39 @@ public class CustomGallery extends Gallery implements AnimationListener {
 		//nextSelection();
 		//reducing the speed of the fling to a more suitable level
 		//return super.onFling(e1, e2, velocityX/3, velocityY/3);
+	}
+	
+	/* (non-Javadoc)
+	 * @see android.widget.Gallery#onSingleTapUp(android.view.MotionEvent)
+	 */
+	@Override
+	public boolean onSingleTapUp(MotionEvent motionEvent) {
+		Log.d("CustomGallery", "onSingleTapUp called for selection " + getSelectedItemPosition());
+		
+		Object currentObject = getAdapter().getItem(getSelectedItemPosition());
+		if(currentObject!=null && currentObject instanceof SlideshowPhoto){
+			SlideshowPhoto currentSlideshowPhoto = (SlideshowPhoto)currentObject;
+			if(currentSlideshowPhoto.isPromotion()){
+				
+				Analytics.trackEvent(getContext(), "actions", "promotion", "clicked");
+				Log.d("CustomGallery", "Promotion clicked, sending the user to the market for the app com.stuckincustoms.slideshow.premium" );
+				try {
+					getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=pname:com.stuckincustoms.slideshow.premium")));
+				}catch (ActivityNotFoundException e) {
+					getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://market.android.com/details?id=com.stuckincustoms.slideshow.premium")));
+				}
+				return true;
+			}else {
+				Adapter adapter = getAdapter();
+				if(adapter instanceof ImageAdapter){
+					ImageAdapter imageAdapter = (ImageAdapter)adapter;
+					imageAdapter.triggerActionToggleTitle();
+					return true;
+				}
+			}
+			
+		}
+		return super.onSingleTapUp(motionEvent);
 	}
 	
 	private boolean isScrollingLeft(MotionEvent e1, MotionEvent e2){
@@ -278,6 +315,64 @@ public class CustomGallery extends Gallery implements AnimationListener {
 	public void onAnimationStart(Animation animation) {
 		//ignore
 	}
+	
+	/* (non-Javadoc)
+	 * @see android.widget.Gallery#onLayout(boolean, int, int, int, int)
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@Override
+	protected void onLayout(boolean changed, int l, int t, int r, int b) {
+		try {
+			super.onLayout(changed, l, t, r, b);
+		}catch (ClassCastException e) {
+			Log.e("CustomGallery", "Got a ClassCastException in onLayout most likely caused by a racecondition in the mRecycle bin ", e);
+			
+			
+			Class classGallery = this.getClass().getSuperclass().getSuperclass();
+			Method methodRecycle;
+			try {
+				methodRecycle = classGallery.getDeclaredMethod("recycleAllViews");
+				methodRecycle.setAccessible(true);
+				methodRecycle.invoke(this);
+				Log.i("CustomGallery", "Succeeded in calling recycleAllViews");
+				return;
+			} catch (SecurityException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (NoSuchMethodException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			} catch (IllegalArgumentException e3) {
+				// TODO Auto-generated catch block
+				e3.printStackTrace();
+			} catch (IllegalAccessException e4) {
+				// TODO Auto-generated catch block
+				e4.printStackTrace();
+			} catch (InvocationTargetException e5) {
+				// TODO Auto-generated catch block
+				e5.printStackTrace();
+			}
+			Log.i("CustomGallery", "Failed in calling recycleAllViews");
+			
+			/*
+			//let us call onLayout slightly in the future
+			final boolean oldChanged=changed;
+			final int oldL=l;
+			final int oldT=t;
+			final int oldR=r;
+			final int oldB=b;
+			final Runnable callOnLayout = new Runnable() {
+		           public void run() {
+		        	   onLayout(oldChanged,oldL,oldT,oldR,oldB);
+		           }
+		    };
+		    
+		    final Handler handler = new Handler();
+		    handler.postAtTime(callOnLayout, 300L);
+		      */ 
+		}
+		
+	}	
 	
     /**
      * Asynch task for displaying a new photo at a regular interval

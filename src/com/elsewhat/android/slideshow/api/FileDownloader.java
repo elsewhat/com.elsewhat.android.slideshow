@@ -39,7 +39,7 @@ public class FileDownloader {
 	List<DownloadableObject> downloadableObjects;
 	FileDownloaderListener listener;
 	
-	private ArrayList<String> arDownloadSize;
+	private List<String> arDownloadSize;
 	
 	public FileDownloader(Context context,FileDownloaderListener listener, File rootDirectory,
 			List<DownloadableObject> downloadableObjects) {
@@ -50,7 +50,7 @@ public class FileDownloader {
 		
 		//lets make sure the List is synchronized
 		this.downloadableObjects = Collections.synchronizedList(downloadableObjects);
-		arDownloadSize=new ArrayList<String>(300);
+		arDownloadSize=Collections.synchronizedList(new ArrayList<String>(300));
 	}
 	
 	/**
@@ -186,7 +186,7 @@ public class FileDownloader {
 				            f.close();
 				            
 				            arDownloadSize.add(file.length()/(1024L) + "KB "+ fileUrl);
-				            Log.d(LOG_PREFIX, file.length()/(1024L) + "KB "+ fileUrl );
+				            //Log.d(LOG_PREFIX, file.length()/(1024L) + "KB "+ fileUrl );
 				            Log.i(LOG_PREFIX, file.getPath()+ " " +file.getName() + " has been written to the file system" );
 				            
 				            //this object is now finished, alert the listener
@@ -243,13 +243,7 @@ public class FileDownloader {
 		@Override
 		protected void onPostExecute(Void result) {
 			isFinished=true;
-		
-			//TEMP
-			Log.w(LOG_PREFIX, "Printing out stats for the " + arDownloadSize.size() + " downloads");
-			for (Iterator<String> iterator = arDownloadSize.iterator(); iterator.hasNext();) {
-				Log.w(LOG_PREFIX, iterator.next());
-			}
-			//TEMP
+
 			
 			if(threadId==0){//only report this from the first thread
 				listener.onAllDownloadsCompleted();

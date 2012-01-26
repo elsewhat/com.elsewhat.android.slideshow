@@ -1,6 +1,7 @@
 package com.elsewhat.android.slideshow.api;
 
 import java.io.File;
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -95,13 +96,28 @@ public class SlideshowPhoto implements DownloadableObject{
 		this.largePhoto = largePhoto;
 	}
 	
-	public Drawable getLargePhotoDrawable(File folder){
+	/*public Drawable getLargePhotoDrawable(File folder){
 		long startTime = System.currentTimeMillis(); 
-		Drawable retDrawable=  FileUtils.readBitmapFromFile(new File(folder,getFileName()));
+		//Drawable retDrawable=  FileUtils.readBitmapFromFile(new File(folder,getFileName()));
+		Drawable retDrawable=  FileUtils.readPurgableBitmapFromFile(new File(folder,getFileName()));
+		long endTime = System.currentTimeMillis();
+		Log.d(SlideshowActivity.LOG_PREFIX, "File IO used " + (endTime - startTime ) + " ms");
+		return retDrawable;
+	}*/
+	
+	public Drawable getLargePhotoDrawable(File folder, int maxWidth, int maxHeight)throws IOException{
+		long startTime = System.currentTimeMillis(); 
+		//Drawable retDrawable=  FileUtils.readBitmapFromFile(new File(folder,getFileName()));
+
+
+		Drawable retDrawable=  FileUtils.readPurgableBitmapFromFile(new File(folder,getFileName()), maxWidth,maxHeight);
 		long endTime = System.currentTimeMillis();
 		Log.d(SlideshowActivity.LOG_PREFIX, "File IO used " + (endTime - startTime ) + " ms");
 		return retDrawable;
 	}
+	
+	
+	
 	
 	public boolean isCacheExisting(File folder){
 		File photoFile = new File(folder, getFileName());

@@ -4,11 +4,16 @@
     <string name="preferences_name">Settings</string>
     <string name="actionbar_title"></string>
     
+     <string name="menu_set_as">Set as wallpaper</string> 
     <string name="menu_preferences">Settings</string>
     <string name="menu_share">Share photo</string>
    <string name="menu_toggle_title">Display/hide title</string> 
+   <string name="menu_pause">Pause</string> 
+   <string name="menu_play">Resume</string> 
 
     <string name="share_footer">Shared from the Slideshow gallery android app available at https://market.android.com/details?id=com.elsewhat.android.slideshow</string>
+	<string name="msg_wallpaper_googletv">Please note that on GoogleTV the wallpaper is generally visible and unfortunately our app cannot override that</string>
+	<string name="msg_wallpaper_failed_drawable">Failed to set this photo as wallpaper. This problem should only apply to the three first photos</string>    
 	<string name="msg_pause_slideshow">Pausing slideshow...</string>
 	<string name="msg_resume_slideshow">Resuming slideshow...</string>
 	<string name="msg_cachedphotos_slideshow">Please restart the app now that cached photos have been deleted</string>

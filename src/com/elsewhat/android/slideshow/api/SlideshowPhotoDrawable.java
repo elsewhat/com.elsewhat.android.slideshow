@@ -1,6 +1,7 @@
 package com.elsewhat.android.slideshow.api;
 
 import java.io.File;
+import java.io.IOException;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
@@ -26,10 +27,10 @@ public class SlideshowPhotoDrawable extends SlideshowPhoto {
 	 * @see com.elsewhat.smugmug.api.SlideshowPhoto#getLargePhotoDrawable(java.io.File)
 	 */
 	@Override
-	public Drawable getLargePhotoDrawable(File folder) {
+	public Drawable getLargePhotoDrawable(File folder, int maxWidth, int maxHeight)throws IOException {
 		//changed this due to ICS bug causing a too large drawable
 		//return context.getResources().getDrawable(largePhotoDrawableId);
-		return FileUtils.readBitmapFromInputStream(context.getResources(), context.getResources().openRawResource(largePhotoDrawableId));
+		return FileUtils.readBitmapFromResources(context.getResources(), largePhotoDrawableId, maxWidth,maxHeight);
 		
 	}
 	/* (non-Javadoc)
@@ -39,6 +40,16 @@ public class SlideshowPhotoDrawable extends SlideshowPhoto {
 	public boolean isCacheExisting(File folder) {
 		//return false in order for share photo to use largePhotoShareUrl
 		return false;
+	}
+	
+	/**
+	 * Returns the drawable id
+	 * Can be used for creating an Uri to the file
+	 * 
+	 * @return
+	 */
+	public int getDrawableId(){
+		return largePhotoDrawableId;
 	}
 	
 	
