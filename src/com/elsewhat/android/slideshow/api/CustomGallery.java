@@ -29,6 +29,8 @@ import com.elsewhat.android.slideshow.activities.SlideshowActivity.ImageAdapter;
 
 
 public class CustomGallery extends Gallery implements AnimationListener {
+
+
 	boolean mDoCustomTransition=false;
 	Animation inAnimation=null;
 	Animation outAnimation=null;
@@ -155,12 +157,18 @@ public class CustomGallery extends Gallery implements AnimationListener {
 		ImageAdapter adapter = (ImageAdapter)getAdapter();
 		int visibility =adapter.shouldDisplayPhotoTitle()?View.VISIBLE:View.INVISIBLE;
 		SlideshowActivity.setVisibilityOfSlideshowText(selectedView,visibility);
-		//Log.i("CustomGallery", "After anim Current: " + getSelectedItemPosition() +  " text visibility "+visibility + " selectedView"+ selectedView);
+		
+		//Notify the adapter that a new photo is being display.
+		//this is used for initiating the TextSwitcher of the description
+		ImageAdapter imageAdapter = (ImageAdapter)adapter;
+		imageAdapter.onGalleryNewPhoto(selectedView);
 		
 		//this is an experimental feature for zooming in on the photo.not quite ready due to performance
 		//new ZoomCurrentViewSoonTask(100).execute();
 
 	}
+	
+
 	
 	/**
 	 * @return the inAnimation
@@ -300,6 +308,7 @@ public class CustomGallery extends Gallery implements AnimationListener {
 	public void onAnimationEnd(Animation arg0) {
 		ongoingAnimation=false;
 		nextSelection();
+		
 		
 
 

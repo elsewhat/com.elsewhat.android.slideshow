@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
@@ -38,9 +40,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ArrayAdapter;
 import android.widget.Gallery;
 import android.widget.ImageView;
+import android.widget.TextSwitcher;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -71,6 +76,7 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 		protected boolean isSlideshowRunning=true;
 		//for downloading the photos
 		protected FileDownloader fileDownloader;
+		protected Timer timerDescriptionScrolling=null;
 		
 		//temp list in order to make sure the image adapter is not updated too often
 		protected ArrayList<SlideshowPhoto> queuedSlideshowPhotos;
@@ -138,9 +144,9 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	        //Add some hardcoded photos that will be displayed untill we have download the others
 	        ArrayList<SlideshowPhoto> cachedDrawables = new ArrayList<SlideshowPhoto>(10);
 	        //FYI the url is only used during share photo
-	        cachedDrawables.add(new SlideshowPhotoDrawable(this,"Father", "Graffiti art captured in Bergen, Norway",R.drawable.photo_father,"http://dl.dropbox.com/u/4379928/Slideshow/father.JPG"));
-	        cachedDrawables.add(new SlideshowPhotoDrawable(this,"Handstand","The lightning was just perfect this day, so why not use it for something productively",R.drawable.photo_handstand,"http://dl.dropbox.com/u/4379928/Slideshow/handstand.jpg"));
-	        cachedDrawables.add(new SlideshowPhotoDrawable(this,"Lexus", "A showcase photo of the Lexus IS series",R.drawable.photo_lexus,"http://dl.dropbox.com/u/4379928/Slideshow/lexus_is%2Cjpg.jpg"));
+	        cachedDrawables.add(new SlideshowPhotoDrawable(this,"Father", "Graffiti art captured in Bergen, Norway. This additional text is used to test how long texts are broken down and displayed in intervals of some seconds apart. We need it to be just a bit longer in order to split it in 3 parts",R.drawable.photo_father,"http://dl.dropbox.com/u/4379928/Slideshow/father.JPG"));
+	        cachedDrawables.add(new SlideshowPhotoDrawable(this,"Handstand","The lightning was just perfect this day, so why not use it for something productively. This photo was taken at Bore beach.",R.drawable.photo_handstand,"http://dl.dropbox.com/u/4379928/Slideshow/handstand.jpg"));
+	        cachedDrawables.add(new SlideshowPhotoDrawable(this,"Lexus", "A showcase photo of the Lexus IS series. This additional text is used to test how long texts are broken down and displayed in intervals and so there so",R.drawable.photo_lexus,"http://dl.dropbox.com/u/4379928/Slideshow/lexus_is%2Cjpg.jpg"));
 	        
 	        //lets randomize the three hardcoded photos
 			long seed = System.nanoTime();
@@ -152,6 +158,9 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	        //create the adapter holding the slideshow photos
 	        imageAdapter=new ImageAdapter(this,0,cachedDrawables,rootFileDirectory,doDisplayPhotoTitle);
 	        gallery.setAdapter(imageAdapter);
+	        
+	        //we call this manually the first time. This triggers a TextSwitcher that scrolls/swaps the text of the description
+	        setUpScrollingOfDescription();
 	        
 	        // Set a item click listener, and just Toast the clicked position
 	        //gallery.setOnItemClickListener(new OnItemClickListener() {
@@ -627,7 +636,7 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	    	 //let's get the views we want to toggle visibility on
 	    	//the values are already populated
 	    	TextView slideshowTitle = (TextView)slideshowView.findViewById(R.id.slideshow_title);
-            TextView slideshowDescription =(TextView)slideshowView.findViewById(R.id.slideshow_description);
+	    	TextSwitcher slideshowDescription =(TextSwitcher)slideshowView.findViewById(R.id.slideshow_description);
             View layout= (View)slideshowView.findViewById(R.id.slideshow_text_background);
             
             
@@ -653,7 +662,70 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
             	slideshowDescription.setVisibility(View.INVISIBLE);
             	layout.setVisibility(View.INVISIBLE);
             }
+	    }
+	    
+	    public void setUpScrollingOfDescription(){
+	    	final CustomGallery gallery = (CustomGallery) findViewById(R.id.gallery);
+	    	//use the same timer. Cancel if running
+	    	if(timerDescriptionScrolling!=null){
+	    		timerDescriptionScrolling.cancel();
+	    	}
 	    	
+	    	timerDescriptionScrolling = new Timer("TextScrolling");
+	    	final Activity activity = this;
+	    	long msBetweenSwaps=3500;
+	    	
+	    	//schedule this to 
+	    	timerDescriptionScrolling.scheduleAtFixedRate(
+	    	    new TimerTask() {
+	    	    	int i=0;
+	    	        public void run() {	    	        	
+	    	        	activity.runOnUiThread(new Runnable() {
+	                        public void run() {
+	                        	SlideshowPhoto currentSlideshowPhoto = (SlideshowPhoto)imageAdapter.getItem(gallery.getSelectedItemPosition());
+	                        	
+	                        	View currentRootView = gallery.getSelectedView();
+	                        	TextSwitcher switcherDescription = (TextSwitcher)currentRootView.findViewById(R.id.slideshow_description);
+	                        	
+	                        	updateScrollingDescription(currentSlideshowPhoto,switcherDescription);
+	                        	
+	                        	//this is the max times we will swap (to make sure we don't create an infinite timer by mistake
+	                        	if(i>30){
+	                        		timerDescriptionScrolling.cancel();
+	                        	}
+	                        	i++;
+	                        }
+	    	        	});
+	    	        	
+	    	        }
+	    	    }, msBetweenSwaps, msBetweenSwaps);
+	    }
+	    
+	    
+	    private void updateScrollingDescription(SlideshowPhoto currentSlideshowPhoto, TextSwitcher switcherDescription){
+	    	String description = currentSlideshowPhoto.getDescription();
+	    	
+	    	TextView descriptionView = ((TextView)switcherDescription.getCurrentView());
+	    	//note currentDescription may contain more text that is shown (but is always a substring
+        	String currentDescription = descriptionView.getText().toString();
+        	
+        	if(currentDescription == null || description==null){
+	    		return;
+	    	}
+
+        	int indexEndCurrentDescription= descriptionView.getLayout().getLineEnd(1);    	
+
+	    	//if we are not displaying all characters, let swap to the not displayed substring
+	    	if(indexEndCurrentDescription>0 && indexEndCurrentDescription<currentDescription.length()){
+	    		String newDescription = currentDescription.substring(indexEndCurrentDescription);
+	    		switcherDescription.setText(newDescription);	
+	    	}else if(indexEndCurrentDescription>=currentDescription.length() && indexEndCurrentDescription<description.length()){
+	    		//if we are displaying the last of the text, but the text has multiple sections. Display the  first one again
+	    		switcherDescription.setText(description);	
+	    	}else {
+	    		//do nothing (ie. leave the text)
+	    	}	    	
+        	
 	    }
 	    
 
@@ -983,10 +1055,22 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	            TextView slideshowTitle = (TextView)slideshowView.findViewById(R.id.slideshow_title);
 	            slideshowTitle.setText(slideshowPhoto.getTitle());
 	            
-	            TextView slideshowDescription = (TextView)slideshowView.findViewById(R.id.slideshow_description);
+	            //Scrolling for the description causes a memory leak
+	            //ref http://stackoverflow.com/questions/8900212/adding-a-simple-scrollview-to-gallery-causes-a-memory-leak
+	            //Therefore we use a TextSwitcher which we will use a Timer job to swap between parts of the string
+	            final TextSwitcher slideshowDescription = (TextSwitcher)slideshowView.findViewById(R.id.slideshow_description);
+	            Animation outAnim = AnimationUtils.loadAnimation(context,
+	                    R.anim.slide_out_down);
+	            Animation inAnim = AnimationUtils.loadAnimation(context,
+	                    R.anim.slide_in_up);		
+	            		
+	            slideshowDescription.setInAnimation(inAnim);
+	            slideshowDescription.setOutAnimation(outAnim);
+	            
 	            slideshowDescription.setText(slideshowPhoto.getDescription());
-	            //add scrolling to TextView
-	            //slideshowDescription.setMovementMethod(new ScrollingMovementMethod());
+	            
+	            
+	            
 	          
 	            //find out if we should hide the text descriptions
 	            boolean isEmptyTitle =false;
@@ -1019,6 +1103,11 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	            
 	            return slideshowView;
 	        }
+
+			public void onGalleryNewPhoto(View view) {
+				setUpScrollingOfDescription();
+				
+			}
 	    }	    
 	    
 	    /**
