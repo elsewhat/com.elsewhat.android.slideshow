@@ -305,6 +305,11 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 			if(slideshowTimerTask!=null){
 				slideshowTimerTask.cancel(false);
 			}
+			
+			if(timerDescriptionScrolling!=null){
+				timerDescriptionScrolling.cancel();
+			}
+			
 			super.onPause();
 		}
 		
@@ -323,6 +328,10 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 			if(fileDownloader!=null && fileDownloader.hasRemainingDownloads()){
 				Log.d(LOG_PREFIX, "Stopping downloading of photos");
 				fileDownloader.stop();
+			}
+			
+			if(timerDescriptionScrolling!=null){
+				timerDescriptionScrolling.cancel();
 			}
 			
 			super.onStop();
@@ -703,9 +712,17 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	    
 	    
 	    private void updateScrollingDescription(SlideshowPhoto currentSlideshowPhoto, TextSwitcher switcherDescription){
+
+	    	
 	    	String description = currentSlideshowPhoto.getDescription();
 	    	
 	    	TextView descriptionView = ((TextView)switcherDescription.getCurrentView());
+	    	
+	    	//avoid nullpointer exception
+        	if(descriptionView==null || descriptionView.getLayout()==null){
+        		return;
+        	}
+	    	
 	    	//note currentDescription may contain more text that is shown (but is always a substring
         	String currentDescription = descriptionView.getText().toString();
         	
@@ -713,6 +730,7 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	    		return;
 	    	}
 
+        	
         	int indexEndCurrentDescription= descriptionView.getLayout().getLineEnd(1);    	
 
 	    	//if we are not displaying all characters, let swap to the not displayed substring
