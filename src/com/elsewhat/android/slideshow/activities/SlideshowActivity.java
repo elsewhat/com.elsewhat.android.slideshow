@@ -15,6 +15,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import android.app.Activity;
+import android.app.MediaRouteButton;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -179,6 +180,7 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	        
 	        //Canvas test = new Canvas();
 	        //Log.i(LOG_PREFIX, " Canvas max " + test.getMaximumBitmapHeight()+","+test.getMaximumBitmapHeight());
+	        
 	        
 	        new PhotoUrlsTask().execute();
 	    }

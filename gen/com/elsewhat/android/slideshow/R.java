@@ -19,13 +19,13 @@ public final class R {
     public static final class attr {
     }
     public static final class color {
-        public static final int black=0x7f060000;
-        public static final int blackTransparent=0x7f060002;
-        public static final int white=0x7f060001;
+        public static final int black=0x7f070000;
+        public static final int blackTransparent=0x7f070002;
+        public static final int white=0x7f070001;
     }
     public static final class dimen {
-        public static final int description_font_size=0x7f070000;
-        public static final int title_font_size=0x7f070001;
+        public static final int description_font_size=0x7f080000;
+        public static final int title_font_size=0x7f080001;
     }
     public static final class drawable {
         public static final int actionbar_background=0x7f020000;
@@ -69,45 +69,59 @@ public final class R {
         public static final int menu_googletv=0x7f0b0001;
     }
     public static final class string {
-        public static final int actionbar_title=0x7f080002;
-        public static final int app_name=0x7f080000;
-        public static final int menu_pause=0x7f080007;
-        public static final int menu_play=0x7f080008;
-        public static final int menu_preferences=0x7f080004;
-        public static final int menu_set_as=0x7f080003;
-        public static final int menu_share=0x7f080005;
-        public static final int menu_toggle_title=0x7f080006;
-        public static final int msg_cachedphotos_slideshow=0x7f08000e;
-        public static final int msg_connected_mobile=0x7f080010;
-        public static final int msg_connected_roaming=0x7f08000f;
-        public static final int msg_outofmemoryerror=0x7f080012;
-        public static final int msg_pause_slideshow=0x7f08000c;
-        public static final int msg_resume_slideshow=0x7f08000d;
-        public static final int msg_unable_to_display_photo=0x7f080013;
-        public static final int msg_unableto_connect=0x7f080011;
-        public static final int msg_wallpaper_failed_drawable=0x7f08000b;
-        public static final int msg_wallpaper_googletv=0x7f08000a;
-        public static final int pref_about_summary=0x7f080026;
-        public static final int pref_about_title=0x7f080025;
-        public static final int pref_allow3g_summary=0x7f080021;
-        public static final int pref_allow3g_title=0x7f080020;
-        public static final int pref_analytics_summary=0x7f080019;
-        public static final int pref_analytics_title=0x7f080018;
-        public static final int pref_category_other=0x7f080015;
-        public static final int pref_category_slideshow=0x7f080014;
-        public static final int pref_deletecache_dialogtitle=0x7f080023;
-        public static final int pref_deletecache_summary=0x7f080024;
-        public static final int pref_deletecache_title=0x7f080022;
-        public static final int pref_displaytime_summary=0x7f08001f;
-        public static final int pref_displaytime_title=0x7f08001e;
-        public static final int pref_phototitle_summary=0x7f08001b;
-        public static final int pref_phototitle_title=0x7f08001a;
-        public static final int pref_premium_summary=0x7f080017;
-        public static final int pref_premium_title=0x7f080016;
-        public static final int pref_transition_dialogtitle=0x7f08001d;
-        public static final int pref_transition_title=0x7f08001c;
-        public static final int preferences_name=0x7f080001;
-        public static final int share_footer=0x7f080009;
+        public static final int actionbar_title=0x7f060006;
+        public static final int app_name=0x7f060004;
+        public static final int error_no_session=0x7f060003;
+        /**  Error message from Cast MediaRouteProvider that indicates that the provider got an
+         error when sending a media command (e.g., load media, pause, etc.) to the selected
+         Cast device. [CHAR LIMIT=NONE] 
+         */
+        public static final int error_ramp_command_failed=0x7f060002;
+        /**  Error message from Cast MediaRouteProvider that indicates that the provider has lost
+         its connection to the selected Cast device. [CHAR LIMIT=NONE] 
+         */
+        public static final int error_session_ended=0x7f060001;
+        /**  Error message from Cast MediaRouteProvider that indicates that the provider was not
+         able to connect to the selected Cast device. [CHAR LIMIT=NONE] 
+         */
+        public static final int error_start_session_failed=0x7f060000;
+        public static final int menu_pause=0x7f06000b;
+        public static final int menu_play=0x7f06000c;
+        public static final int menu_preferences=0x7f060008;
+        public static final int menu_set_as=0x7f060007;
+        public static final int menu_share=0x7f060009;
+        public static final int menu_toggle_title=0x7f06000a;
+        public static final int msg_cachedphotos_slideshow=0x7f060012;
+        public static final int msg_connected_mobile=0x7f060014;
+        public static final int msg_connected_roaming=0x7f060013;
+        public static final int msg_outofmemoryerror=0x7f060016;
+        public static final int msg_pause_slideshow=0x7f060010;
+        public static final int msg_resume_slideshow=0x7f060011;
+        public static final int msg_unable_to_display_photo=0x7f060017;
+        public static final int msg_unableto_connect=0x7f060015;
+        public static final int msg_wallpaper_failed_drawable=0x7f06000f;
+        public static final int msg_wallpaper_googletv=0x7f06000e;
+        public static final int pref_about_summary=0x7f06002a;
+        public static final int pref_about_title=0x7f060029;
+        public static final int pref_allow3g_summary=0x7f060025;
+        public static final int pref_allow3g_title=0x7f060024;
+        public static final int pref_analytics_summary=0x7f06001d;
+        public static final int pref_analytics_title=0x7f06001c;
+        public static final int pref_category_other=0x7f060019;
+        public static final int pref_category_slideshow=0x7f060018;
+        public static final int pref_deletecache_dialogtitle=0x7f060027;
+        public static final int pref_deletecache_summary=0x7f060028;
+        public static final int pref_deletecache_title=0x7f060026;
+        public static final int pref_displaytime_summary=0x7f060023;
+        public static final int pref_displaytime_title=0x7f060022;
+        public static final int pref_phototitle_summary=0x7f06001f;
+        public static final int pref_phototitle_title=0x7f06001e;
+        public static final int pref_premium_summary=0x7f06001b;
+        public static final int pref_premium_title=0x7f06001a;
+        public static final int pref_transition_dialogtitle=0x7f060021;
+        public static final int pref_transition_title=0x7f060020;
+        public static final int preferences_name=0x7f060005;
+        public static final int share_footer=0x7f06000d;
     }
     public static final class style {
         /**  <item name="android:divider">?abDivider</item>
