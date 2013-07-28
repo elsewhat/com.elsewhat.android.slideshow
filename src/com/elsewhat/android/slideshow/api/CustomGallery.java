@@ -25,7 +25,6 @@ import android.widget.ViewAnimator;
 
 import com.elsewhat.android.slideshow.R;
 import com.elsewhat.android.slideshow.activities.SlideshowActivity;
-import com.elsewhat.android.slideshow.activities.SlideshowActivity.ImageAdapter;
 
 
 public class CustomGallery extends Gallery implements AnimationListener {
@@ -72,6 +71,7 @@ public class CustomGallery extends Gallery implements AnimationListener {
 	 */
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		Log.i("CustomGallery", "onKeydown in Customer Gallery . Key code "+keyCode);
 		if(event instanceof FlingKeyEvent){
 			//use the default handling if this came from a fling event
 			return super.onKeyDown(keyCode,null);
