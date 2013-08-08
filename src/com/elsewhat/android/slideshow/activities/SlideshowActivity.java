@@ -14,6 +14,7 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.MediaRouteButton;
 import android.content.ActivityNotFoundException;
@@ -86,6 +87,8 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 		protected AsyncReadQueue<Drawable> asyncReadQueue;
 		
 		protected Menu menu;
+		
+		protected ChromecastAddin chromecastAddIn;
 		
 		boolean cachedPhotosDeleted=false;
 		boolean userCreatedTouchEvent=false;
@@ -234,6 +237,7 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	        return true;
 	    }*/
 	    
+		@SuppressLint("NewApi")
 		@Override
 		public boolean onCreateOptionsMenu(Menu menu) {
 			MenuInflater inflater = getMenuInflater();
@@ -244,6 +248,12 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 				inflater.inflate(R.menu.menu, menu);
 			}
 			this.menu=menu;
+
+			//Chromecast 
+			MenuItem mediaRouteItem = menu.findItem( R.id.menuChromecast );
+		    android.support.v7.app.MediaRouteButton mediaRouteButton = (android.support.v7.app.MediaRouteButton) mediaRouteItem.getActionView();
+		    chromecastAddIn = new ChromecastAddin();
+		    chromecastAddIn.onCreate(this, mediaRouteButton);
 			
 			return true;
 		}
@@ -1032,7 +1042,6 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 	    }
 
 
-
 		@Override
 		public void onAsyncReadComplete(AsyncQueueableObject queueableObject) {
 			//ignore this event	
@@ -1052,60 +1061,4 @@ public class SlideshowActivity extends Activity implements FileDownloaderListene
 		public int getScreenHeight() {
 			return screenHeightPx;
 		}
-	    
-	    /**
-	     * Asynch task for loading a photo from File I/O.
-	     * 
-	     * A temporary loading drawable is set while waiting
-	     * 
-	     *
-	    public class ReadPhotoFromFileTask extends AsyncTask<Void, Void, Void> {
-	    	ImageView imageView;
-	    	SlideshowPhoto slideshowPhoto;
-	    	File fileFolder;
-	    	Drawable drawable;
-	    	boolean outOfMemoryError=false;
-	    	public ReadPhotoFromFileTask(ImageView imageView, SlideshowPhoto slideshowPhoto, File fileFolder){
-	    		this.imageView=imageView;
-	    		this.slideshowPhoto=slideshowPhoto;
-	    		this.fileFolder=fileFolder;
-	    		//TODO: Create new photo
-	    		imageView.setImageResource(R.drawable.loading);
-	    	}
-			@Override
-			protected Void doInBackground(Void... arg0) {
-				try {
-				drawable = slideshowPhoto.getLargePhotoDrawable(fileFolder, screenWidthPx,screenHeightPx);
-				}catch (OutOfMemoryError e) {
-					outOfMemoryError=true;
-				}cat
-				return null;
-			}
-			
-			
-			@Override
-			protected void onPostExecute(Void result) {
-				if(drawable!=null){
-					//special ICS bugfix since resources.getDrawable returns too large (>2048) drawable
-					//no longer needed as we read the drawable through the raw stream and BitMap drawable.
-					//int width= drawable.getIntrinsicWidth();
-
-					
-					imageView.setImageDrawable(drawable);
-					//required because of a bug on Sony Google TV that retain the size of the loading image
-					//imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-					imageView.requestLayout();
-					//Log.d(LOG_PREFIX, "ImageView (" + imageView.getWidth() + ","+imageView.getHeight()+")");
-				}else if(outOfMemoryError==true){
-					notifyUser(getString(R.string.msg_outofmemoryerror));
-				}else {
-					notifyUser(getString(R.string.msg_unable_to_display_photo));
-				}
-				
-			}
-	    }
-*/
-
-
-
 }

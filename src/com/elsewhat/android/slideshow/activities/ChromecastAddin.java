@@ -3,7 +3,6 @@ package com.elsewhat.android.slideshow.activities;
 import java.io.IOException;
 
 import android.app.Activity;
-import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.MediaRouteButton;
 import android.support.v7.media.MediaRouteSelector;
 import android.support.v7.media.MediaRouter;
@@ -19,7 +18,6 @@ import com.google.cast.MediaProtocolMessageStream;
 import com.google.cast.MediaRouteAdapter;
 import com.google.cast.MediaRouteHelper;
 import com.google.cast.MediaRouteStateChangeListener;
-import com.google.cast.MimeData;
 import com.google.cast.SessionError;
 
 public class ChromecastAddin implements MediaRouteAdapter {
@@ -34,8 +32,7 @@ public class ChromecastAddin implements MediaRouteAdapter {
 	private ApplicationSession mSession;
     
     
-	public void onCreate(Activity activity, int media_route_button_id){
-        mMediaRouteButton = (MediaRouteButton) activity.findViewById(media_route_button_id);
+	public void onCreate(Activity activity, MediaRouteButton mMediaRouteButton){
 
         mCastContext = new CastContext(activity.getApplicationContext());
         MediaRouteHelper.registerMinimalMediaRouteProvider(mCastContext, this);

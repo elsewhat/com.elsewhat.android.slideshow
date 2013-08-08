@@ -10,6 +10,7 @@
    <string name="menu_toggle_title">Display/hide title</string> 
    <string name="menu_pause">Pause</string> 
    <string name="menu_play">Resume</string> 
+   <string name="menu_chromecast">Cast</string> 
 
     <string name="share_footer">Shared from the Slideshow gallery android app available at https://market.android.com/details?id=com.elsewhat.android.slideshow</string>
 	<string name="msg_wallpaper_googletv">Please note that on GoogleTV the wallpaper is generally visible and unfortunately our app cannot override that</string>

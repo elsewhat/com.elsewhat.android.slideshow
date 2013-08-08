@@ -17,6 +17,11 @@
 	<item android:id="@+id/menuPreferences" android:title="@string/menu_preferences"
 		android:icon="@android:drawable/ic_menu_preferences" />	
 		
-				
+			<item
+    android:id="@+id/menuChromecast"
+    android:actionProviderClass="android.support.v7.app.MediaRouteActionProvider"
+android:actionViewClass="android.support.v7.app.MediaRouteButton"
+    android:showAsAction="always"
+    android:title="@string/menu_chromecast"/>	
 
 </menu>
