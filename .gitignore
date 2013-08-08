@@ -1,1 +1,8 @@
 bin
+gen/android/support/v7/appcompat/R.java
+
+gen/android/support/v7/mediarouter/R.java
+
+gen/com/google/cast/R.java
+
+gen/com/elsewhat/android/slideshow/R.java
